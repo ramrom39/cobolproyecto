@@ -189,23 +189,33 @@ class BankProcessorUI:
     
     def cargar_datos(self):
         """Cargar datos de archivos"""
-        # Cargar cuentas maestro (formato ancho fijo)
+        import re
+        
+        # Cargar cuentas maestro - parsear extrayendo saldo del final
         try:
             with open(self.maestro_file, 'r', encoding='utf-8') as f:
                 for linea in f:
-                    if len(linea.strip()) > 0:
-                        # Formato ancho fijo: posiciones 1-10=cuenta, 11-40=nombre, 41+=saldo
-                        cuenta = linea[0:10].strip()
-                        titular = linea[10:40].strip()
-                        saldo_str = linea[40:].strip()
+                    linea = linea.rstrip()
+                    if len(linea) >= 15:
+                        # Primeros 10 caracteres = cuenta
+                        cuenta = linea[:10].strip()
                         
-                        try:
+                        # Extraer saldo del final usando regex (busca número.número al final)
+                        match = re.search(r'([\d.,]+)$', linea)
+                        if match:
+                            saldo_str = match.group(1).replace(',', '.')
                             saldo = float(saldo_str)
-                            self.cuentas[cuenta] = {'titular': titular, 'saldo': saldo}
-                        except ValueError:
-                            print(f"Advertencia: No se pudo convertir saldo: {saldo_str}")
+                            # El nombre es lo que queda en el medio
+                            titular = linea[10:match.start()].strip()
+                        else:
+                            saldo = 0.0
+                            titular = linea[10:].strip()
+                        
+                        self.cuentas[cuenta] = {'titular': titular, 'saldo': saldo}
         except FileNotFoundError:
             messagebox.showerror("Error", f"No se encontró {self.maestro_file}")
+        except Exception as e:
+            messagebox.showerror("Error", f"Error leyendo maestro.dat: {e}")
         
         # Cargar movimientos (formato: cuenta tipo monto)
         try:
@@ -343,27 +353,48 @@ class BankProcessorUI:
     
     def generar_reporte(self):
         """Generar reporte"""
+        # Calcular saldos aplicando movimientos
+        saldos_procesados = {c: d['saldo'] for c, d in self.cuentas.items()}
+        
+        for mov in self.movimientos:
+            cuenta = mov['cuenta']
+            if cuenta in saldos_procesados:
+                if mov['tipo'] == 'D':
+                    saldos_procesados[cuenta] += mov['monto']
+                else:  # tipo == 'R'
+                    saldos_procesados[cuenta] -= mov['monto']
+        
+        # Generar reporte
         reporte = []
-        reporte.append("REPORTE DE ACTUALIZACIÓN DE SALDOS")
-        reporte.append("=" * 75)
+        reporte.append("")
+        reporte.append("╔════════════════════════════════════════════════════════════════════════════════╗")
+        reporte.append("║           REPORTE DE ACTUALIZACIÓN DE SALDOS BANCARIOS                         ║")
+        reporte.append("╚════════════════════════════════════════════════════════════════════════════════╝")
+        reporte.append("")
         reporte.append(f"Fecha: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}")
         reporte.append(f"Total de Movimientos Procesados: {len(self.movimientos)}")
-        reporte.append("=" * 75)
         reporte.append("")
-        
-        reporte.append(f"{'Cuenta':<15} {'Titular':<30} {'Saldo':>20}")
-        reporte.append("-" * 75)
+        reporte.append("─" * 85)
+        reporte.append(f"{'Cuenta':<15} | {'Titular':<40} | {'Saldo':>20}")
+        reporte.append("─" * 85)
         
         total = 0
         for cuenta, datos in sorted(self.cuentas.items()):
+            titular_truncado = datos['titular'][:40]
+            saldo_actual = saldos_procesados[cuenta]
+            saldo_str = f"${saldo_actual:,.2f}"
             reporte.append(
-                f"{cuenta:<15} {datos['titular']:<30} ${datos['saldo']:>18,.2f}"
+                f"{cuenta:<15} | {titular_truncado:<40} | {saldo_str:>20}"
             )
-            total += datos['saldo']
+            total += saldo_actual
         
-        reporte.append("-" * 75)
-        reporte.append(f"{'TOTAL':<15} {'':<30} ${total:>18,.2f}")
-        reporte.append("=" * 75)
+        reporte.append("─" * 85)
+        saldo_total = f"${total:,.2f}"
+        reporte.append(f"{'TOTAL':<15} | {'':<40} | {saldo_total:>20}")
+        reporte.append("═" * 85)
+        reporte.append("")
+        reporte.append("✓ Procesamiento completado exitosamente.")
+        reporte.append("")
         
         contenido = "\n".join(reporte)
         self.text_reporte.delete("1.0", tk.END)
