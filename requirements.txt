@@ -1,0 +1,8 @@
+# Procesador Bancario COBOL - Requisitos
+
+# La interfaz Python utiliza tkinter, que viene incluido con Python
+# Si necesitas instalar dependencias adicionales, usa:
+# pip install -r requirements.txt
+
+# Actualmente no hay dependencias externas requeridas
+# tkinter se incluye automáticamente con Python 3.x

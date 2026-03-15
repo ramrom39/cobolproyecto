@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Procesador Bancario Batch</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+        
+        .nav-tabs {
+            display: flex;
+            background: #f8f9fa;
+            border-bottom: 2px solid #dee2e6;
+            flex-wrap: wrap;
+        }
+        
+        .nav-tab {
+            padding: 15px 25px;
+            cursor: pointer;
+            border: none;
+            background: none;
+            font-size: 1em;
+            font-weight: 500;
+            transition: all 0.3s;
+            border-bottom: 3px solid transparent;
+            margin-bottom: -2px;
+        }
+        
+        .nav-tab:hover {
+            background: #e9ecef;
+        }
+        
+        .nav-tab.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+        
+        .tab-content {
+            display: none;
+            padding: 30px;
+            animation: fadeIn 0.3s;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        input, select, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 1em;
+            font-family: inherit;
+        }
+        
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 15px;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-block;
+        }
+        
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-success {
+            background: #27ae60;
+            color: white;
+            width: 100%;
+        }
+        
+        .btn-success:hover {
+            background: #229954;
+        }
+        
+        .btn-secondary {
+            background: #95a5a6;
+            color: white;
+            margin-left: 10px;
+        }
+        
+        .btn-secondary:hover {
+            background: #7f8c8d;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background: white;
+            border-radius: 5px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        th {
+            background: #34495e;
+            color: white;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+        }
+        
+        td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #ecf0f1;
+        }
+        
+        tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .alert {
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+            display: block;
+        }
+        
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+            display: block;
+        }
+        
+        .alert-info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+            display: block;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .stat-card h3 {
+            font-size: 2em;
+            margin-bottom: 5px;
+        }
+        
+        .stat-card p {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+        
+        .report-box {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 20px;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .search-box {
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>💳 Procesador Bancario Batch</h1>
+            <p>Sistema de actualización de saldos en tiempo real</p>
+        </div>
+        
+        <div class="nav-tabs">
+            <button class="nav-tab active" onclick="cambiarTab('cuentas')">📊 Cuentas Maestro</button>
+            <button class="nav-tab" onclick="cambiarTab('movimientos')">📝 Movimientos</button>
+            <button class="nav-tab" onclick="cambiarTab('procesar')">⚙️ Ejecutar</button>
+            <button class="nav-tab" onclick="cambiarTab('reporte')">📄 Reporte</button>
+        </div>
+        
+        <!-- TAB: CUENTAS -->
+        <div id="cuentas" class="tab-content active">
+            <h2>📊 Cuentas Maestro</h2>
+            
+            <div class="stats" id="statsContainer"></div>
+            
+            <div class="search-box">
+                <input type="text" id="buscarCuenta" placeholder="🔍 Buscar por número de cuenta o titular..." 
+                       onkeyup="filtrarTabla()">
+            </div>
+            
+            <div id="alertaCuentas" class="alert"></div>
+            
+            <table id="tablaCuentas">
+                <thead>
+                    <tr>
+                        <th>Número de Cuenta</th>
+                        <th>Titular</th>
+                        <th>Saldo Inicial</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+        
+        <!-- TAB: MOVIMIENTOS -->
+        <div id="movimientos" class="tab-content">
+            <h2>📝 Agregar Movimiento</h2>
+            
+            <div id="alertaMovimientos" class="alert"></div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="cuentaMov">Número de Cuenta:</label>
+                    <input type="text" id="cuentaMov" placeholder="Ej: 1000000001">
+                </div>
+                <div class="form-group">
+                    <label for="tipoMov">Tipo de Movimiento:</label>
+                    <select id="tipoMov">
+                        <option value="D">Depósito (D)</option>
+                        <option value="R">Retiro (R)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="montoMov">Monto:</label>
+                    <input type="number" id="montoMov" placeholder="0.00" step="0.01" min="0.01">
+                </div>
+            </div>
+            
+            <button class="btn btn-primary" onclick="agregarMovimiento()">➕ Agregar Movimiento</button>
+            
+            <h3 style="margin-top: 30px;">Movimientos Registrados</h3>
+            
+            <table id="tablaMovimientos">
+                <thead>
+                    <tr>
+                        <th>Número de Cuenta</th>
+                        <th>Tipo</th>
+                        <th>Monto</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+        
+        <!-- TAB: PROCESAR -->
+        <div id="procesar" class="tab-content">
+            <h2>⚙️ Procesar Actualización</h2>
+            
+            <div id="alertaProcesar" class="alert alert-info">
+                ℹ️ <strong>Nota:</strong> Para ejecutar el programa, necesitas tener COBOL instalado en tu sistema.
+                <br>Alternativamente, puedes ver una simulación del procesamiento aquí.
+            </div>
+            
+            <div class="btn-group">
+                <button class="btn btn-success" onclick="simularProcesamiento()">🚀 Simular Procesamiento</button>
+            </div>
+            
+            <h3>📋 Log de Procesamiento</h3>
+            <div id="logProcesamiento" class="report-box" style="min-height: 300px;">Log vacío. Haz clic en "Simular Procesamiento" para ver los detalles...</div>
+        </div>
+        
+        <!-- TAB: REPORTE -->
+        <div id="reporte" class="tab-content">
+            <h2>📄 Reporte Final</h2>
+            
+            <div class="btn-group">
+                <button class="btn btn-primary" onclick="generarReporte()">🔄 Generar Reporte</button>
+                <button class="btn btn-secondary" onclick="limpiarReporte()">🗑️ Limpiar</button>
+            </div>
+            
+            <div id="reporteFinal" class="report-box" style="min-height: 400px;">Reporte vacío. Haz clic en "Generar Reporte" para ver los resultados...</div>
+        </div>
+    </div>
+    
+    <script>
+        // Datos simulados
+        const cuentasMaestro = [
+            { cuenta: '1000000001', titular: 'Juan Pérez García', saldo: 100000.50 },
+            { cuenta: '1000000002', titular: 'María González López', saldo: 250000.75 },
+            { cuenta: '1000000003', titular: 'Carlos Rodríguez Martín', saldo: 500000.00 },
+            { cuenta: '1000000004', titular: 'Ana Martínez Sánchez', saldo: 75000.25 },
+            { cuenta: '1000000005', titular: 'Pedro López Fernández', saldo: 180000.90 },
+            { cuenta: '1000000006', titular: 'Rosa García Jiménez', saldo: 320000.40 }
+        ];
+        
+        let movimientosRegistrados = [
+            { cuenta: '1000000001', tipo: 'D', monto: 50000.00 },
+            { cuenta: '1000000002', tipo: 'R', monto: 25000.00 },
+            { cuenta: '1000000001', tipo: 'R', monto: 10000.00 },
+            { cuenta: '1000000003', tipo: 'D', monto: 100000.00 },
+            { cuenta: '1000000004', tipo: 'D', monto: 15000.50 },
+            { cuenta: '1000000002', tipo: 'D', monto: 45000.25 },
+            { cuenta: '1000000005', tipo: 'R', monto: 30000.00 },
+            { cuenta: '1000000006', tipo: 'D', monto: 20000.00 }
+        ];
+        
+        function cambiarTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.nav-tab').forEach(tab => tab.classList.remove('active'));
+            
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+            
+            if (tabName === 'cuentas') {
+                cargarCuentas();
+            } else if (tabName === 'movimientos') {
+                cargarMovimientos();
+            }
+        }
+        
+        function cargarCuentas() {
+            const tbody = document.querySelector('#tablaCuentas tbody');
+            tbody.innerHTML = '';
+            
+            cuentasMaestro.forEach(cuenta => {
+                const row = tbody.insertRow();
+                row.innerHTML = `
+                    <td>${cuenta.cuenta}</td>
+                    <td>${cuenta.titular}</td>
+                    <td>$${cuenta.saldo.toLocaleString('es-MX', {minimumFractionDigits: 2})}</td>
+                `;
+            });
+            
+            mostrarEstadisticas();
+        }
+        
+        function mostrarEstadisticas() {
+            const totalSaldo = cuentasMaestro.reduce((sum, c) => sum + c.saldo, 0);
+            const totalCuentas = cuentasMaestro.length;
+            const promedio = totalSaldo / totalCuentas;
+            
+            const html = `
+                <div class="stat-card">
+                    <h3>${totalCuentas}</h3>
+                    <p>Total de Cuentas</p>
+                </div>
+                <div class="stat-card">
+                    <h3>$${totalSaldo.toLocaleString('es-MX', {maximumFractionDigits: 0})}</h3>
+                    <p>Saldo Total</p>
+                </div>
+                <div class="stat-card">
+                    <h3>$${promedio.toLocaleString('es-MX', {minimumFractionDigits: 0})}</h3>
+                    <p>Saldo Promedio</p>
+                </div>
+            `;
+            document.getElementById('statsContainer').innerHTML = html;
+        }
+        
+        function filtrarTabla() {
+            const filtro = document.getElementById('buscarCuenta').value.toLowerCase();
+            const tbody = document.querySelector('#tablaCuentas tbody');
+            
+            tbody.innerHTML = '';
+            cuentasMaestro.forEach(cuenta => {
+                if (cuenta.cuenta.includes(filtro) || cuenta.titular.toLowerCase().includes(filtro)) {
+                    const row = tbody.insertRow();
+                    row.innerHTML = `
+                        <td>${cuenta.cuenta}</td>
+                        <td>${cuenta.titular}</td>
+                        <td>$${cuenta.saldo.toLocaleString('es-MX', {minimumFractionDigits: 2})}</td>
+                    `;
+                }
+            });
+        }
+        
+        function cargarMovimientos() {
+            const tbody = document.querySelector('#tablaMovimientos tbody');
+            tbody.innerHTML = '';
+            
+            movimientosRegistrados.forEach(mov => {
+                const row = tbody.insertRow();
+                row.innerHTML = `
+                    <td>${mov.cuenta}</td>
+                    <td>${mov.tipo === 'D' ? '✅ Depósito' : '❌ Retiro'}</td>
+                    <td>$${mov.monto.toLocaleString('es-MX', {minimumFractionDigits: 2})}</td>
+                `;
+            });
+        }
+        
+        function agregarMovimiento() {
+            const cuenta = document.getElementById('cuentaMov').value.trim();
+            const tipo = document.getElementById('tipoMov').value;
+            const monto = parseFloat(document.getElementById('montoMov').value);
+            const alertDiv = document.getElementById('alertaMovimientos');
+            
+            if (!cuenta || !monto || monto <= 0) {
+                alertDiv.className = 'alert alert-error';
+                alertDiv.innerHTML = '❌ Por favor, completa todos los campos correctamente.';
+                return;
+            }
+            
+            movimientosRegistrados.push({ cuenta, tipo, monto });
+            
+            document.getElementById('cuentaMov').value = '';
+            document.getElementById('montoMov').value = '';
+            
+            alertDiv.className = 'alert alert-success';
+            alertDiv.innerHTML = '✅ Movimiento agregado correctamente.';
+            
+            setTimeout(() => alertDiv.className = 'alert', 3000);
+            cargarMovimientos();
+        }
+        
+        function simularProcesamiento() {
+            const logDiv = document.getElementById('logProcesamiento');
+            logDiv.innerHTML = '';
+            
+            function log(msg) {
+                logDiv.innerHTML += msg + '\n';
+                logDiv.scrollTop = logDiv.scrollHeight;
+            }
+            
+            log('🔄 Iniciando procesamiento...\n');
+            setTimeout(() => {
+                log('📂 Leyendo archivo maestro (data/maestro.dat)...');
+                log(`✅ Cargadas ${cuentasMaestro.length} cuentas\n`);
+                
+                log('📂 Leyendo archivo de movimientos (data/movimientos.dat)...');
+                log(`✅ Procesados ${movimientosRegistrados.length} movimientos\n`);
+                
+                log('💾 Actualizando saldos...');
+                movimientosRegistrados.forEach(mov => {
+                    const cuenta = cuentasMaestro.find(c => c.cuenta === mov.cuenta);
+                    if (cuenta) {
+                        if (mov.tipo === 'D') {
+                            cuenta.saldo += mov.monto;
+                            log(`  ✅ Depósito: ${mov.cuenta} +$${mov.monto.toFixed(2)}`);
+                        } else {
+                            cuenta.saldo -= mov.monto;
+                            log(`  ✅ Retiro: ${mov.cuenta} -$${mov.monto.toFixed(2)}`);
+                        }
+                    }
+                });
+                
+                log('\n📄 Generando reporte...');
+                log('✅ Reporte guardado en data/reporte.txt\n');
+                log('✅ Procesamiento completado exitosamente');
+            }, 500);
+        }
+        
+        function generarReporte() {
+            const reportDiv = document.getElementById('reporteFinal');
+            
+            let contenido = 'REPORTE DE ACTUALIZACIÓN DE SALDOS\n';
+            contenido += '=' .repeat(60) + '\n\n';
+            contenido += 'Resumen de Procesamiento:\n';
+            contenido += '-'.repeat(60) + '\n';
+            contenido += `Total de Cuentas: ${cuentasMaestro.length}\n`;
+            contenido += `Total de Movimientos: ${movimientosRegistrados.length}\n`;
+            contenido += `Saldo Total: $${cuentasMaestro.reduce((s, c) => s + c.saldo, 0).toLocaleString('es-MX', {minimumFractionDigits: 2})}\n\n`;
+            
+            contenido += 'Detalle de Saldos Actualizados:\n';
+            contenido += '=' .repeat(60) + '\n';
+            contenido += 'Número de Cuenta   | Titular           | Saldo Actualizado\n';
+            contenido += '-'.repeat(60) + '\n';
+            
+            cuentasMaestro.forEach(cuenta => {
+                const titular = cuenta.titular.padEnd(19);
+                const saldo = cuenta.saldo.toLocaleString('es-MX', {minimumFractionDigits: 2}).padStart(19);
+                contenido += `${cuenta.cuenta} | ${titular} | ${saldo}\n`;
+            });
+            
+            contenido += '\n' + '='.repeat(60) + '\n';
+            contenido += 'Fin del Reporte\n';
+            
+            reportDiv.innerHTML = contenido;
+        }
+        
+        function limpiarReporte() {
+            document.getElementById('reporteFinal').innerHTML = 'Reporte vacío. Haz clic en "Generar Reporte" para ver los resultados...';
+        }
+        
+        // Cargar datos al iniciar
+        cargarCuentas();
+        cargarMovimientos();
+    </script>
+</body>
+</html>
